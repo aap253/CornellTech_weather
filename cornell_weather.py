@@ -345,7 +345,7 @@ def add_cornell_tech_map():
     cornell_tech_lon = -73.95584979896849
     fig = go.Figure()
     
-    fig.add_trace(go.Scattermapbox(
+    fig.add_trace(go.Scattermap(
         lat=[cornell_tech_lat],
         lon=[cornell_tech_lon],
         mode='markers',
