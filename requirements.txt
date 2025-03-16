@@ -1,0 +1,13 @@
+streamlit
+pandas
+plotly
+numpy
+prettymapp
+osmnx
+matplotlib
+scikit-learn
+contextily
+geopandas
+shapely
+pillow
+requests
