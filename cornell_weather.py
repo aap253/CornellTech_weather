@@ -87,6 +87,14 @@ with cols[3]:
     year_mean = year_data[temp_col].mean()
     delta = year_mean - historical_mean
     st.metric("vs. Historical Avg", f"{year_mean:.1f}{temp_symbol}", f"{delta:+.1f}{temp_symbol}")
+    
+# Add explanatory text
+st.info(f"""
+This graph demonstrates seasonal variations at Cornell Tech. The data reveals:
+1. Summer is typically experienced May through August. 
+2. The coldest months span December through February. 
+3. The temperature falls more rapidly in the second half of the year than it rises in the first half.
+""")
 
 st.markdown("---")
 st.header("Climate Change observed at Cornell Tech")
@@ -103,7 +111,7 @@ warm_years = yearly_avg_temp[yearly_avg_temp['above_threshold']]
 if not warm_years.empty:
     first_warm_year = warm_years.iloc[0]['year']
     first_warm_temp = warm_years.iloc[0][temp_col]
-    st.success(f"The first year when the average temperature exceeded {threshold:.1f}{temp_symbol} was **{int(first_warm_year)}** with an average temperature of **{first_warm_temp:.2f}{temp_symbol}**.")
+    st.write(f"The first year when the average temperature exceeded {threshold:.1f}{temp_symbol} was **{int(first_warm_year)}** with an average temperature of **{first_warm_temp:.2f}{temp_symbol}**.")
 
 fig2 = go.Figure()
 fig2.add_trace(go.Scatter(
