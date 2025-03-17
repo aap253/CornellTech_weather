@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 
 st.image(Image.open("cornell_tech_logo.jpg"), width=600, use_container_width=True)
-st.title("Cornell Tech Weather")
+st.title("Cornell Tech Microclimate Patterns")
 st.subheader("Explore temperature patterns from 1950 to 2021")
 
 st.sidebar.header("Settings")
@@ -29,7 +29,7 @@ def load_data():
 df = load_data()
 min_year = int(df['year'].min())
 max_year = int(df['year'].max())
-selected_year = st.slider("Select a year", min_year, max_year, max_year)
+selected_year = st.slider("Select a year", min_year, max_year, max_year, key="year_slider")
 
 year_data = df[df['year'] == selected_year]
 
@@ -74,7 +74,7 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.subheader("Temperature Statistics")
+st.subheader(f"Temperature Statistics for {selected_year}")
 cols = st.columns(4)
 with cols[0]:
     st.metric("Annual Average", f"{year_data[temp_col].mean():.1f}{temp_symbol}")
@@ -89,7 +89,7 @@ with cols[3]:
     st.metric("vs. Historical Avg", f"{year_mean:.1f}{temp_symbol}", f"{delta:+.1f}{temp_symbol}")
 
 st.markdown("---")
-st.header("When will Cornell Tech finally be warm?")
+st.header("Climate Change observed at Cornell Tech")
 
 
 threshold_f = 55
@@ -147,7 +147,6 @@ temps_array = yearly_avg_temp[temp_col].values
 slope, intercept = np.polyfit(years_array, temps_array, 1)
 
 temp_change_per_decade = slope * 10
-st.write(f"Temperature is changing at a rate of **{temp_change_per_decade:.2f}{temp_symbol} per decade**.")
 
 df['decade'] = (df['year'] // 10) * 10
 decade_avg = df.groupby('decade')[temp_col].mean().reset_index()
@@ -249,6 +248,8 @@ season_decade_avg = df.groupby(['decade', 'season'])[temp_col].mean().reset_inde
 
 pivot_data = season_decade_avg.pivot(index='decade', columns='season', values=temp_col)
 
+st.subheader("Seasonal Temperature Shifts by Decade")
+
 fig_heatmap = go.Figure(data=go.Heatmap(
     z=pivot_data.values,
     x=pivot_data.columns,
@@ -276,7 +277,7 @@ fig_heatmap.update_layout(
     height=450,  
     xaxis_title='Season',
     yaxis_title='Decade',
-    title='Seasonal Temperature Changes by Decade',
+    title='Seasonal Temperature Shifts by Decade',
     margin=dict(r=150, b=60),  
     xaxis=dict(
         tickvals=list(range(len(pivot_data.columns))),
@@ -286,32 +287,33 @@ fig_heatmap.update_layout(
 
 st.plotly_chart(fig_heatmap, use_container_width=True)
 
-
 st.subheader("Decade-by-Decade Comparison")
 
-earliest_decade = decade_avg['decade'].min()
-latest_decade = decade_avg['decade'].max()
+# Calculate averages for 1950-1999 period
+early_period_data = df[(df['year'] >= 1950) & (df['year'] <= 1999)]
+early_period_avg = early_period_data[temp_col].mean()
 
-earliest_temp = decade_avg[decade_avg['decade'] == earliest_decade][temp_col].values[0]
-latest_temp = decade_avg[decade_avg['decade'] == latest_decade][temp_col].values[0]
+# Calculate averages for 2000-2021 period
+later_period_data = df[(df['year'] >= 2000) & (df['year'] <= 2021)]
+later_period_avg = later_period_data[temp_col].mean()
 
-temp_change = latest_temp - earliest_temp
-percent_change = (temp_change / earliest_temp) * 100
+# Calculate temperature change
+temp_change = later_period_avg - early_period_avg
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
     st.metric(
-        f"Average Temp ({int(earliest_decade)}s)", 
-        f"{earliest_temp:.2f}{temp_symbol}", 
+        f"Average Temp (1950-1999)", 
+        f"{early_period_avg:.2f}{temp_symbol}", 
         delta=None
     )
 
 with col2:
     st.metric(
-        f"Average Temp ({int(latest_decade)}s)", 
-        f"{latest_temp:.2f}{temp_symbol}", 
-        delta=f"{temp_change:+.2f}{temp_symbol} vs {int(earliest_decade)}s",
+        f"Average Temp (2000-2021)", 
+        f"{later_period_avg:.2f}{temp_symbol}", 
+        delta=f"{temp_change:+.2f}{temp_symbol} vs 1950-1999",
         delta_color="inverse"  # Red for increasing temperature
     )
 
@@ -321,21 +323,26 @@ with col3:
     target_temp_c = (target_temp_f - 32) * 5/9
     target_temp = target_temp_f if temp_unit == "Fahrenheit" else target_temp_c
     
-    # Calculate years to reach target temperature at current rate
-    years_to_target = (target_temp - latest_temp) / (slope)
-    target_year = int(latest_decade + years_to_target)
+    # Calculate projection using linear extrapolation based on ALL years (1950-2021)
+    # Get the most recent year's temperature as starting point
+    latest_year = int(yearly_avg_temp['year'].max())
+    latest_temp = yearly_avg_temp[yearly_avg_temp['year'] == latest_year][temp_col].values[0]
+    
+    # Calculate years to reach target temperature using the slope from ALL years
+    years_to_target = (target_temp - latest_temp) / slope
+    target_year = int(latest_year + years_to_target)
     
     st.metric(
         f"Projected Year to Reach {target_temp:.1f}{temp_symbol}", 
         f"{target_year}",
-        delta=f"{int(years_to_target)} years from {int(latest_decade)}"
+        delta=f"{int(years_to_target)} years from {latest_year}"
     )
 
 # Add explanatory text
 st.info(f"""
 This analysis shows the clear warming trend at Cornell Tech over the decades. The data reveals:
 1. The rate of temperature increase has been {temp_change_per_decade:.2f}{temp_symbol} per decade
-2. Seasonal variations show warming across all seasons
+2. Seasonal variations show warming across all seasons, however, it is most prominent in winter and fall seasons. This suggests climate change impacts may be more pronounced during colder months
 3. If trends continue, Cornell Tech will reach {target_temp:.1f}{temp_symbol} by {target_year}
 """)
 
